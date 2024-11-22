@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Your Own Tattoo Design</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: white;
+            color: black;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="file"] {
+            margin-bottom: 10px;
+        }
+        #tattooContainer {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+        }
+        #bodyPlacementPreview {
+            width: 100%;
+            height: auto;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #tattooReferencePreview {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(1) rotate(0deg);
+            mix-blend-mode: multiply;
+            filter: saturate(0%);
+            touch-action: none;
+            user-select: none;
+            width: 150px;
+        }
+        button[type="submit"] {
+            background-image: linear-gradient(to right, blue, pink, purple);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            width: 100%;
+        }
+        button[type="submit"]:hover {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Create Your Own Tattoo Design</h1>
+        <form enctype="multipart/form-data" method="post" action="#" id="tattooForm">
+            <label for="bodyPlacement">Upload Body Placement Image:</label>
+            <input type="file" id="bodyPlacement" name="bodyPlacement" accept="image/*" required>
+            <label for="tattooReference">Upload Tattoo Reference Image:</label>
+            <input type="file" id="tattooReference" name="tattooReference" accept="image/*" required>
+            <button type="submit">Create</button>
+        </form>
+        <div id="preview"></div>
+    </div>
+    <script>
+        document.getElementById('tattooForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const bodyPlacementFile = document.getElementById('bodyPlacement').files[0];
+            const tattooReferenceFile = document.getElementById('tattooReference').files[0];
+
+            if (bodyPlacementFile && tattooReferenceFile) {
+                const preview = document.getElementById('preview');
+                preview.innerHTML = ''; // Clear previous content
+
+                // Add body placement image
+                const bodyPlacementPreview = document.createElement('img');
+                bodyPlacementPreview.src = URL.createObjectURL(bodyPlacementFile);
+                bodyPlacementPreview.id = 'bodyPlacementPreview';
+                bodyPlacementPreview.alt = 'Body Placement Image';
+                bodyPlacementPreview.style.width = '100%';
+                preview.appendChild(bodyPlacementPreview);
+
+                // Add tattoo reference image
+                const tattooReferencePreview = document.createElement('img');
+                tattooReferencePreview.id = 'tattooReferencePreview';
+                tattooReferencePreview.src = URL.createObjectURL(tattooReferenceFile);
+                preview.appendChild(tattooReferencePreview);
+
+                enableTouchGestures(tattooReferencePreview);
+            }
+        });
+
+        function enableTouchGestures(element) {
+            let startX, startY, offsetX, offsetY, startScale = 1, startRotation = 0;
+            let initialDistance = null, initialAngle = null;
+
+            element.addEventListener('touchstart', (event) => {
+                if (event.touches.length === 1) {
+                    // Single touch for dragging
+                    const rect = element.getBoundingClientRect();
+                    offsetX = event.touches[0].clientX - rect.left;
+                    offsetY = event.touches[0].clientY - rect.top;
+                } else if (event.touches.length === 2) {
+                    // Two fingers for resizing and rotating
+                    initialDistance = getDistance(event.touches[0], event.touches[1]);
+                    initialAngle = getAngle(event.touches[0], event.touches[1]);
+                }
+            });
+
+            element.addEventListener('touchmove', (event) => {
+                if (event.touches.length === 1) {
+                    // Dragging
+                    const x = event.touches[0].clientX - offsetX;
+                    const y = event.touches[0].clientY - offsetY;
+                    element.style.left = `${x}px`;
+                    element.style.top = `${y}px`;
+                    element.style.transformOrigin = "center center"; // Fix origin during drag
+                } else if (event.touches.length === 2) {
+                    // Resizing and rotating
+                    const currentDistance = getDistance(event.touches[0], event.touches[1]);
+                    const scale = currentDistance / initialDistance * startScale;
+
+                    const currentAngle = getAngle(event.touches[0], event.touches[1]);
+                    const rotation = startRotation + (currentAngle - initialAngle);
+
+                    element.style.transform = `translate(-50%, -50%) scale(${scale}) rotate(${rotation}deg)`;
+                }
+            });
+
+            element.addEventListener('touchend', (event) => {
+                if (event.touches.length === 0) {
+                    // Save the current scale and rotation
+                    const transform = element.style.transform.match(/scale\(([^)]+)\).*rotate\(([^)]+)deg\)/);
+                    if (transform) {
+                        startScale = parseFloat(transform[1]);
+                        startRotation = parseFloat(transform[2]);
+                    }
+                }
+            });
+
+            function getDistance(touch1, touch2) {
+                const dx = touch2.clientX - touch1.clientX;
+                const dy = touch2.clientY - touch1.clientY;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+
+            function getAngle(touch1, touch2) {
+                const dx = touch2.clientX - touch1.clientX;
+                const dy = touch2.clientY - touch1.clientY;
+                return Math.atan2(dy, dx) * (180 / Math.PI);
+            }
+        }
+    </script>
+</body>
+</html>
